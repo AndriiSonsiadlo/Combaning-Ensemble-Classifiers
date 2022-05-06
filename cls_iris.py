@@ -1,51 +1,58 @@
+import numpy as np
 from sklearn.datasets import load_iris
 import pandas as pd
+from sklearn.ensemble import *
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 
 class DatasetConfig:
-    def __init__(self, dataset_name: str = '', names: list = None, global_path: str = None, local_path: str = None,
-                 url: str = None):
-        if names is None:
-            self.names = []
-        else:
-            self.names = names
+    dataset_features = None
+    dataset_labels = None
+    x_train, x_test, y_train, y_test = None, None, None, None
 
+    def __init__(self, dataset_name, names: list, target_name, path_or_url: str, delete_names=None):
         self.dataset_name = dataset_name
-        self.global_path = global_path
-        self.local_path = local_path
-        self.url = url
+        self.names = names
+        self.delete_names = delete_names
+        self.target_name = target_name
+        self.path_or_url = path_or_url
 
-    def __get__(self):
-        if self.local_path:
-            path = self.local_path
-        elif self.global_path:
-            path = self.global_path
-        elif self.url:
-            path = self.url
-        else:
-            raise BufferError("Dataset path is empty. Set local path, global path or URL for Dataset.")
-        return self.dataset_name, path, self.names
+    def processing_data(self):
+        dataset = pd.read_csv(self.path_or_url, names=self.names)
+        if self.delete_names:
+            for name in self.delete_names:
+                dataset.pop(name)
+        self.dataset_features = dataset.copy()
+        self.dataset_labels = self.dataset_features.pop(self.target_name)
 
-
-iris = load_iris()
-print(iris["data"], iris["target"])
+        x_train, x_test, y_train, y_test = train_test_split(self.dataset_features, self.dataset_labels, test_size=0.25)
+        return np.array(x_train), np.array(x_test), np.array(y_train), np.array(y_test)
 
 
-def load_dataset(dataset_config: DatasetConfig, targer_name:str):
-    dataset = pd.read_csv(dataset_config.local_path, names=dataset_config.names)
-    dataset_features = dataset.copy()
-    dataset_labels = dataset_features.pop(targer_name)
+if __name__ == '__main__':
+    iris = load_iris()
+    print(iris["data"], iris["target"])
 
-    x_train, x_test, y_train, y_test = train_test_split(dataset_features, dataset_labels, test_size=0.25)
-    return x_train, x_test, y_train, y_test
+    abalone_dataset = DatasetConfig(dataset_name="Abalone",
+                                    names=["Sex", "Length", "Diameter", "Height", "Whole weight", "Shucked weight",
+                                           "Viscera weight", "Shell weight", "Rings"],
+                                    path_or_url="datasets/Abalone_DB/abalone.data",
+                                    target_name="Sex",
+                                    delete_names=[]).processing_data()
+    print(abalone_dataset)
 
+    clfs = [RandomForestClassifier(n_estimators=1, n_jobs=10),
+            DecisionTreeClassifier(),
+            KNeighborsClassifier(n_neighbors=4)]
+    for clf in clfs:
+        clf.fit(abalone_dataset[0], abalone_dataset[2])
+        y_pred_rf = clf.predict(abalone_dataset[1])
+        print(accuracy_score(abalone_dataset[3], y_pred_rf))
 
-abalone_dsc = DatasetConfig(dataset_name="Abalone",
-                            names=["Sex", "Length", "Diameter", "Height", "Whole weight", "Shucked weight",
-                                   "Viscera weight", "Shell weight", "Rings"],
-                            local_path="datasets/Abalone_DB/abalone.data")
-abalone_splitted_dataset = load_dataset(abalone_dsc, "Sex")
-
-
-
+    #rnd_clf = RandomForestClassifier(n_estimators=500, n_jobs=-1)
+    #rnd_clf.fit(abalone_dataset[0], abalone_dataset[2])
+    #y_pred_rf = rnd_clf.predict(abalone_dataset[1])
+    #print(accuracy_score(abalone_dataset[3], y_pred_rf))
