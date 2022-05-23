@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -7,33 +9,67 @@ from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 
 
 class Dataset:
+    file_json = 'datasets_config.json'
     dataset = None
     ordinal_dataset = None
-    dataset_features = None
-    dataset_labels = None
+    x_features = None
+    y_labels = None
     x_train, x_test, y_train, y_test = None, None, None, None
 
-    def __init__(self, dataset_name, feature_labels: list, target_label, path_or_url: str, record_count=-1,
+    def __init__(self, name, feature_labels: list, target_label, path_or_url: str, record_count=-1,
                  test_size=0.33):
-        self.dataset_name = dataset_name
+        self.name = name
         self.feature_labels = feature_labels
         self.target_label = target_label
         self.path_or_url = path_or_url
         self.test_size = test_size
 
         self.dataset = self.load_dataset(self.path_or_url, self.feature_labels).head(record_count)
-        self.dataset_features, self.dataset_labels = self.process_dataset(self.dataset, self.target_label)
-        self.x_train, self.x_test, self.y_train, self.y_test = self.split_dataset(self.dataset_features,
-                                                                                  self.dataset_labels,
+        self.x_features, self.y_labels = self.process_dataset(self.dataset, self.target_label)
+        self.x_train, self.x_test, self.y_train, self.y_test = self.split_dataset(self.x_features,
+                                                                                  self.y_labels,
                                                                                   self.test_size)
         # self.__create_ordinal_dataset()
 
     def __call__(self, *args, **kwargs):
-        return "Huuraa"
+        return self.dataset
 
-    @staticmethod
-    def load_dataset(path_or_url, feature_names):
-        dataset = pd.read_csv(path_or_url, names=feature_names)
+    @classmethod
+    def get_datasets(cls, *args):
+        datasets_lst = []
+
+        with open(cls.file_json, 'r') as f:
+            data = json.load(f)["datasets"]
+
+        for i in data:
+            name = data[i]["name"]
+            path_or_url = data[i]["path_or_url"]
+            feature_labels = data[i]["feature_labels"]
+            target_label = data[i]["target_label"]
+            record_count = data[i]["record_count"]
+
+            dataset = Dataset(name=name, feature_labels=feature_labels, target_label=target_label,
+                              path_or_url=path_or_url, record_count=record_count)
+            datasets_lst.append(dataset)
+
+        return datasets_lst
+
+    @classmethod
+    def get_dataset(cls, name: str):
+        lst = cls.get_datasets()
+
+        for dataset in lst:
+            if dataset.name.lower() == name.lower():
+                return dataset
+
+        raise NameError(f" {name.capitalize()} dataset not exist")
+
+    def load_dataset(self, path_or_url, feature_names):
+        if self.name.lower() in ['bank', 'student', 'winequalitywhite', 'winequalityred']:
+            delimiter = ';'
+        else:
+            delimiter = None
+        dataset = pd.read_csv(path_or_url, names=feature_names, delimiter=delimiter)
 
         return dataset
 
@@ -47,6 +83,7 @@ class Dataset:
         if isinstance(dataset, pd.DataFrame):
             if isinstance(target_name, str):
                 dataset_labels = dataset_features.pop(target_name)
+
             else:
                 raise NameError("Target name must be in string!")
         else:
@@ -54,6 +91,8 @@ class Dataset:
 
         dataset_features = ordinal_encoder.fit_transform(dataset_features)
         dataset_labels = label_encoder.fit_transform(dataset_labels)
+
+        #    return dataset_features, dataset_labels
 
         return np.array(dataset_features), np.array(dataset_labels)
 
@@ -69,7 +108,6 @@ class Dataset:
         if isinstance(array, np.ndarray):
             print(names)
             df = pd.DataFrame(array, columns=names)
-            print(df)
             return df
         else:
             raise TypeError("Given data is not ndarray type!")
@@ -77,13 +115,13 @@ class Dataset:
     def plot(self):
         plt.close()
         sns.set_style("whitegrid")
-        print(self.dataset, self.target_label)
+
         ds = self.ordinal_dataset if self.ordinal_dataset else self.dataset
-        sns.pairplot(ds, hue=self.target_label, size=self.__get_class_count())
+        sns.pairplot(ds, hue=self.target_label, height=self._get_class_count())
         plt.show()
 
-    def __get_class_count(self):
-        return len(self.feature_labels) - 1
+    def _get_class_count(self):
+        return len(set(self.feature_labels)) - 1
 
     def _to_df(self):
         return self.dataset
@@ -92,7 +130,7 @@ class Dataset:
         return np.array(self.dataset)
 
     def _get_dataset_x_and_y(self):
-        return self.dataset_features, self.dataset_labels
+        return self.x_features, self.y_labels
 
     def _get_dataset_train_xy_and_test_xy(self):
         return self.x_train, self.x_test, self.y_train, self.y_test
@@ -100,18 +138,18 @@ class Dataset:
     def __create_ordinal_dataset(self):
         ordinal_encoder = OrdinalEncoder()
 
-        ordinal_dataset_np = ordinal_encoder.fit_transform(self.dataset_features)
+        ordinal_dataset_np = ordinal_encoder.fit_transform(self.x_features)
         self.ordinal_dataset = self.ndarray_to_df(ordinal_dataset_np, names=self.feature_labels[:-1])
-        self.ordinal_dataset[self.target_label] = self.dataset_labels
+        self.ordinal_dataset[self.target_label] = self.y_labels
 
-
-dataset_conf = Dataset(dataset_name="Iris",
-                       feature_labels=["sepal length in cm", "sepal width in cm",
-                                       "petal length in cm", "petal width in cm", "class"],
-                       path_or_url="datasets/Iris_DB/iris.data",
-                       target_label="class",
-                       record_count=-1,
-                       test_size=0.33)
-
-a = dataset_conf()
-print(dataset_conf())
+# dataset_conf = Dataset(dataset_name="Iris",
+#                        feature_labels=["sepal length in cm", "sepal width in cm",
+#                                        "petal length in cm", "petal width in cm", "class"],
+#                        path_or_url="datasets/Iris_DB/iris.data",
+#                        target_label="class",
+#                        record_count=-1,
+#                        test_size=0.33)
+#
+# a = dataset_conf()
+#
+# dataset_conf.plot()

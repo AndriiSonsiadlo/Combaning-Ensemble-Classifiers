@@ -1,0 +1,221 @@
+{
+  "datasets": {
+    "Abalone": {
+      "name": "Abalone",
+      "path_or_url": "datasets/Abalone_DB/abalone.data",
+      "feature_labels": [
+        "Sex",
+        "Length",
+        "Diameter",
+        "Height",
+        "Whole weight",
+        "Shucked weight",
+        "Viscera weight",
+        "Shell weight",
+        "Rings"
+      ],
+      "target_label": "Sex",
+      "record_count": -1
+    },
+    "Adult": {
+      "name": "Adult",
+      "path_or_url": "datasets/Adult_DB/adult.data",
+      "feature_labels": [
+        "age",
+        "workclass",
+        "fnlwgt",
+        "education",
+        "education-num",
+        "marital-status",
+        "occupation",
+        "relationship",
+        "race",
+        "sex",
+        "capital-gain",
+        "capital-loss",
+        "hours-per-week",
+        "native-country",
+        "class"
+      ],
+      "target_label": "class",
+      "record_count": -1
+    },
+    "Auction": {
+      "name": "Auction",
+      "path_or_url": "datasets/Auction_DB/data.csv",
+      "feature_labels": [
+        "process.b1.capacity",
+        "process.b2.capacity",
+        "process.b3.capacity",
+        "process.b4.capacity",
+        "property.price",
+        "property.product",
+        "property.winner",
+        "verification.result",
+        "verification.time"
+      ],
+      "target_label": "verification.result",
+      "record_count": -1
+    },
+    "Bank": {
+      "name": "Bank",
+      "path_or_url": "datasets/Bank_DB/bank.csv",
+      "feature_labels": [
+        "age",
+        "job",
+        "marital",
+        "education",
+        "default",
+        "balance",
+        "housing",
+        "loan",
+        "contact",
+        "day",
+        "month",
+        "duration",
+        "campaign",
+        "pdays",
+        "previous",
+        "poutcome",
+        "y"
+      ],
+      "target_label": "y",
+      "record_count": -1
+    },
+    "Car": {
+      "name": "Car",
+      "path_or_url": "datasets/Car_DB/Car.data",
+      "feature_labels": [
+        "buying",
+        "maint",
+        "doors",
+        "persons",
+        "lug_boot",
+        "safety",
+        "class"
+      ],
+      "target_label": "class",
+      "record_count": -1
+    },
+    "Iris": {
+      "name": "Iris",
+      "path_or_url": "datasets/Iris_DB/iris.data",
+      "feature_labels": [
+        "sepal length in cm",
+        "sepal width in cm",
+        "petal length in cm",
+        "petal width in cm",
+        "class"
+      ],
+      "target_label": "class",
+      "record_count": -1
+    },
+    "Student": {
+      "name": "Student",
+      "path_or_url": "datasets/Student_DB/data.csv",
+      "feature_labels": [
+        "Marital status",
+        "Application mode",
+        "Application order",
+        "Course",
+        "Daytime/evening attendance",
+        "Previous qualification",
+        "Previous qualification (grade)",
+        "Nacionality",
+        "Mother's qualification",
+        "Father's, qualification",
+        "Mother's occupation",
+        "Father's occupation",
+        "Admission grade",
+        "Displaced",
+        "Educational special needs",
+        "Debtor",
+        "Tuition fees up to date",
+        "Gender",
+        "Scholarship holder",
+        "Age at enrollment",
+        "International",
+        "Curricular units 1st sem (credited)",
+        "Curricular units 1st sem (enrolled)",
+        "Curricular units 1st sem (evaluations)",
+        "Curricular units 1st sem (approved)",
+        "Curricular units 1st sem (grade)",
+        "Curricular units 1st sem (without evaluations)",
+        "Curricular units 2nd sem (credited)",
+        "Curricular units 2nd sem (enrolled)",
+        "Curricular units 2nd sem (evaluations)",
+        "Curricular units 2nd sem (approved)",
+        "Curricular units 2nd sem (grade)",
+        "Curricular units 2nd sem (without evaluations)",
+        "Unemployment rate",
+        "Inflation rate",
+        "GDP",
+        "Target"
+      ],
+      "target_label": "Target",
+      "record_count": -1
+    },
+    "Wine": {
+      "name": "Wine",
+      "path_or_url": "datasets/Wine_DB/wine.data",
+      "feature_labels": [
+        "Class",
+        "Alcohol",
+        "Malicacid",
+        "Ash",
+        "Alcalinity of ash",
+        "Magnesium",
+        "Total phenols",
+        "Flavanoids",
+        "Nonflavanoid phenols",
+        "Proanthocyanins",
+        "Color intensity",
+        "Hue",
+        "OD280 / OD315 of diluted wines",
+        "Proline"
+      ],
+      "target_label": "Class",
+      "record_count": -1
+    },
+    "WineQualityRed": {
+      "name": "WineQualityRed",
+      "path_or_url": "datasets/WineQuality_DB/winequality-red.csv",
+      "feature_labels": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "quality"
+      ],
+      "target_label": "quality",
+      "record_count": -1
+    },
+    "WineQualityWhite_DB": {
+      "name": "WineQualityWhite",
+      "path_or_url": "datasets/WineQuality_DB/winequality-white.csv",
+      "feature_labels": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "quality"
+      ],
+      "target_label": "quality",
+      "record_count": -1
+    }
+  }
+}
