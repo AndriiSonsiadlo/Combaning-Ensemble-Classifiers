@@ -50,7 +50,11 @@ class Dataset:
 
             dataset = Dataset(name=name, feature_labels=feature_labels, target_label=target_label,
                               path_or_url=path_or_url, record_count=record_count)
-            datasets_lst.append(dataset)
+
+            if len(args) and dataset.name.lower() in args:
+                datasets_lst.append(dataset)
+            elif not len(args):
+                datasets_lst.append(dataset)
 
         return datasets_lst
 

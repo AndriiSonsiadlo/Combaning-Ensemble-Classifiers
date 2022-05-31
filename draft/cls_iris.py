@@ -55,7 +55,7 @@ def dataset_adult(records_count=-1):
                                                  "hours-per-week",
                                                  "native-country",
                                                  "class"],
-                           path_or_url="datasets/Adult_DB/adult.data",
+                           path_or_url="../datasets/Adult_DB/adult.data",
                            target_label="class",
                            record_count=records_count)
     return dataset_conf
@@ -77,7 +77,7 @@ def dataset_wine(records_count=-1, test_size=0.33):
                                                  "Hue",
                                                  "OD280 / OD315 of diluted wines",
                                                  "Proline"],
-                           path_or_url="datasets/Wine_DB/wine.data",
+                           path_or_url="../datasets/Wine_DB/wine.data",
                            target_label="Class",
                            record_count=records_count,
                            test_size=test_size)
@@ -94,7 +94,7 @@ def dataset_car(records_count=-1):
                                                  "lug_boot",
                                                  "safety",
                                                  "class"],
-                           path_or_url="datasets/Car_DB/Car.data",
+                           path_or_url="../datasets/Car_DB/car.data",
                            target_label="class",
                            record_count=records_count)
 
@@ -105,7 +105,7 @@ def dataset_iris(records_count=-1, test_size=0.33):
     dataset_conf = Dataset(name="Iris",
                            feature_labels=["sepal length in cm", "sepal width in cm",
                                                  "petal length in cm", "petal width in cm", "class"],
-                           path_or_url="datasets/Iris_DB/iris.data",
+                           path_or_url="../datasets/Iris_DB/iris.data",
                            target_label="class",
                            record_count=records_count,
                            test_size=test_size)
@@ -117,7 +117,7 @@ def dataset_abalone(records_count=-1, test_size=0.33):
                            feature_labels=["Sex", "Length", "Diameter", "Height", "Whole weight",
                                                  "Shucked weight",
                                                  "Viscera weight", "Shell weight", "Rings"],
-                           path_or_url="datasets/Abalone_DB/abalone.data",
+                           path_or_url="../datasets/Abalone_DB/abalone.data",
                            target_label="Rings",
                            record_count=records_count,
                            test_size=test_size)
