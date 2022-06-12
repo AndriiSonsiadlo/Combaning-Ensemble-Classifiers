@@ -39,19 +39,19 @@ class Dataset:
         datasets_lst = []
 
         with open(cls.file_json, 'r') as f:
-            data = json.load(f)["datasets"]
+            datasets = json.load(f)["datasets"]
 
-        for i in data:
-            name = data[i]["name"]
-            path_or_url = data[i]["path_or_url"]
-            feature_labels = data[i]["feature_labels"]
-            target_label = data[i]["target_label"]
-            record_count = data[i]["record_count"]
+        for dataset in datasets:
+            name = datasets[dataset]["name"]
+            path_or_url = datasets[dataset]["path_or_url"]
+            feature_labels = datasets[dataset]["feature_labels"]
+            target_label = datasets[dataset]["target_label"]
+            record_count = datasets[dataset]["record_count"]
 
             dataset = Dataset(name=name, feature_labels=feature_labels, target_label=target_label,
                               path_or_url=path_or_url, record_count=record_count)
 
-            if len(args) and dataset.name.lower() in args:
+            if len(args) and (dataset.name.lower() in args or dataset.name in args):
                 datasets_lst.append(dataset)
             elif not len(args):
                 datasets_lst.append(dataset)

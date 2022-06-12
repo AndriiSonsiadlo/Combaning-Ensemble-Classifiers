@@ -3,7 +3,7 @@ from Dataset import Dataset
 
 if __name__ == '__main__':
    ens = Algorithm()
-   datasets = Dataset.get_datasets("adult", "iris", "car", "student")
+   datasets = Dataset.get_datasets()
 
    for dataset in datasets:
 

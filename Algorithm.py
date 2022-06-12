@@ -2,11 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mlxtend.classifier import EnsembleVoteClassifier
 from prettytable import PrettyTable
+from scipy.stats import studentized_range
 from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, VotingClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import resample
+from scipy import stats
 
 from Dataset import Dataset
 
@@ -65,11 +67,11 @@ class Algorithm:
                 classifier_list = self.generate_boosting_list(trn_x, trn_y, n_samples)
                 clf_modified_1 = VotingClassifier(estimators=classifier_list, voting='soft')
 
-                clf_bagging_2 = BaggingClassifier(DecisionTreeClassifier(max_depth=1), n_estimators=self.n, bootstrap=True,
-                                         n_jobs=self.n_jobs)
+                clf_bagging_2 = BaggingClassifier(DecisionTreeClassifier(max_depth=1), n_estimators=self.n,
+                                                  bootstrap=True,
+                                                  n_jobs=self.n_jobs)
 
                 clf_boosting_3 = AdaBoostClassifier(DecisionTreeClassifier(max_depth=1), n_estimators=self.k)
-
 
                 # Train classifiers
                 clf_modified_1.fit(trn_x, trn_y)
@@ -97,8 +99,10 @@ class Algorithm:
                 scores_2.append(score_2)
                 scores_3.append(score_3)
                 diff_scores.append((score_1 - score_2, scores_1 - score_3))
-                print("Fold %2d score difference between clf_modified and clf_bagging = %.6f" % (i_f + 1, score_1 - score_2))
-                print("Fold %2d score difference between clf_modified and clf_boosting = %.6f" % (i_f + 1, score_1 - score_3))
+                print("Fold %2d score difference between clf_modified and clf_bagging = %.6f" % (
+                    i_f + 1, score_1 - score_2))
+                print("Fold %2d score difference between clf_modified and clf_boosting = %.6f" % (
+                    i_f + 1, score_1 - score_3))
 
                 # Compute score difference for current fold
                 p_i[i_f] = score_1 - score_2
@@ -115,29 +119,36 @@ class Algorithm:
 
         # Compute t value as the first difference divided by the square root of variance estimate
         t_bar = p_1_1 / ((s_sqr / 5) ** .5)
-        print("t value:", abs(t_bar))
-        print("Classifier 1 mean score and stdev: %.4f (+/- %.4f)" % (np.mean(scores_1), np.std(scores_1)))
-        print("Classifier 2 mean score and stdev: %.4f (+/- %.4f)" % (np.mean(scores_2), np.std(scores_2)))
-        print("Classifier 3 mean score and stdev: %.4f (+/- %.4f)" % (np.mean(scores_3), np.std(scores_3)))
-        print("Score difference mean (+/- stdev): %.4f (+/- %.4f)" % (np.mean(diff_scores[0]), np.std(diff_scores[0])))
-       # print("[Mod and Bag] Score difference mean (+/- stdev): %.4f (+/- %.4f)" % (np.mean(diff_scores[:][0]), np.std(diff_scores[:][0])))
-       # print("[Mod and Boost] Score difference mean (+/- stdev): %.4f (+/- %.4f)" % (np.mean(diff_scores[:][1]), np.std(diff_scores[:][1])))
 
         self.result[dataset.name] = {
             "info": {
                 "num_records": len(y),
                 "num_classes": len(set(y))
             },
-            "clf1":
-                {"mean": round(np.mean(scores_1), 4),
-                 "std": round(np.std(scores_1), 4)},
-            "clf2":
-                {"mean": round(np.mean(scores_2), 4),
-                 "std": round(np.std(scores_2), 4)},
-            "clf3":
-                {"mean": round(np.mean(scores_3), 4),
-                 "std": round(np.std(scores_3), 4)}
+            "clf1": {
+                "mean": round(np.mean(scores_1), 4),
+                "std": round(np.std(scores_1), 4)
+            },
+            "clf2": {
+                "mean": round(np.mean(scores_2), 4),
+                "std": round(np.std(scores_2), 4)
+            },
+            "clf3": {
+                "mean": round(np.mean(scores_3), 4),
+                "std": round(np.std(scores_3), 4)
+            }
         }
+
+        print("t value:", abs(t_bar))
+        print("Classifier 1 mean score and stdev: %.4f (+/- %.4f)" % (self.result[dataset.name]["clf1"]["mean"],
+                                                                      self.result[dataset.name]["clf1"]["std"]))
+        print("Classifier 2 mean score and stdev: %.4f (+/- %.4f)" % (self.result[dataset.name]["clf2"]["mean"],
+                                                                      self.result[dataset.name]["clf2"]["std"]))
+        print("Classifier 3 mean score and stdev: %.4f (+/- %.4f)" % (self.result[dataset.name]["clf3"]["mean"],
+                                                                      self.result[dataset.name]["clf3"]["std"]))
+        print("Score difference mean (+/- stdev): %.4f (+/- %.4f)" % (np.mean(diff_scores[0]), np.std(diff_scores[0])))
+        # print("[Mod and Bag] Score difference mean (+/- stdev): %.4f (+/- %.4f)" % (np.mean(diff_scores[:][0]), np.std(diff_scores[:][0])))
+        # print("[Mod and Boost] Score difference mean (+/- stdev): %.4f (+/- %.4f)" % (np.mean(diff_scores[:][1]), np.std(diff_scores[:][1])))
 
     def generate_boosting_list(self, trn_x, trn_y, n_samples):
         classifier_list = []
@@ -195,10 +206,10 @@ class Algorithm:
 
         modified_clf = ax.bar(index, mean_clf1, bar_width, alpha=opacity, color='g', yerr=std_clf1,
                               error_kw=error_config, label='Boosting in Bagging')
-        bagging_clf = ax.bar(index + bar_width, mean_clf2, bar_width, alpha=opacity, color='y', yerr=std_clf2,
-                             error_kw=error_config, label='Bagging')
         boosting_clf = ax.bar(index + (2 * bar_width), mean_clf3, bar_width, alpha=opacity, color='b', yerr=std_clf3,
                               error_kw=error_config, label='Bagging')
+        bagging_clf = ax.bar(index + bar_width, mean_clf2, bar_width, alpha=opacity, color='y', yerr=std_clf2,
+                             error_kw=error_config, label='Bagging')
 
         ax.set_xlabel('Classifiers')
         ax.set_ylabel('Accuracy scores with variance')
