@@ -127,15 +127,14 @@ class Algorithm:
         x, y = dataset.x_features, dataset.y_labels
 
         # scores_1, scores_2, scores_3, diff_scores = [], [], [], []
-        p_1_1_bag, p_1_1_boost = 0.0, 0.0         # Initialize the score difference for the 1st fold of the 1st iteration
-        s_sqr_bag, s_sqr_boost = 0.0, 0.0         # Initialize a place holder for the variance estimate
-
+        p_1_1_bag, p_1_1_boost = 0.0, 0.0  # Initialize the score difference for the 1st fold of the 1st iteration
+        s_sqr_bag, s_sqr_boost = 0.0, 0.0  # Initialize a place holder for the variance estimate
 
         # Iterate through 5 2-fold CV
         for i_s, seed in enumerate(self.seeds):
 
-            p_i_bag = np.zeros(2)    # Initialize score differences
-            p_i_boost = np.zeros(2)    # Initialize score differences
+            p_i_bag = np.zeros(2)  # Initialize score differences
+            p_i_boost = np.zeros(2)  # Initialize score differences
 
             # Split the dataset in 2 parts with the current seed
             folds = StratifiedKFold(n_splits=2, shuffle=True, random_state=seed)
@@ -241,7 +240,6 @@ class Algorithm:
 
     def get_mean_std_lists(self):
 
-
         mean_mod, mean_bag, mean_boost = [], [], []
         std_mod, std_bag, std_boost = [], [], []
 
@@ -257,25 +255,39 @@ class Algorithm:
 
     def display_table(self):
         table = PrettyTable()
-        table.field_names = ["Dataset", "t - mod_bag", "t - mod_boost", "Differ - bag", "Differ - boost", "Num records", "Num classes", "Mod clf - mean", "Bagging clf - mean",
-                             "Boosting clf - mean", "Mod clf - std", "Bagging clf - std", "Boosting clf - std"]
+        table.field_names = ["Dataset", "t - mod_bag", "t - mod_boost", "Differ - mod and bag",
+                             "Differ - mod and boost", "Num records", "Num classes", "Mod clf - mean",
+                             "Bagging clf - mean", "Boosting clf - mean", "Mod clf - std", "Bagging clf - std",
+                             "Boosting clf - std"]
 
         for key, data_res in self.result.items():
-            print(f"k = {self.k}")
-            print(f"n = {self.n}")
-            print(f"max_depth = {self.max_depth}")
-
             t_bag = round(data_res.t_student_mod_bag, 2)
             t_boost = round(data_res.t_student_mod_boost, 2)
 
-            table.add_row([key, t_bag, t_boost, "+" if t_bag > 2.71 else "-", "+" if t_boost > 2.71 else "-",
+            if t_bag > 2.71:
+                mod_or_bag = "Modified"
+            elif t_bag < -2.71:
+                mod_or_bag = "Bagging"
+            else:
+                mod_or_bag = "Similar"
+
+            if t_boost > 2.71:
+                mod_or_boost = "Modified"
+            elif t_boost < -2.71:
+                mod_or_boost = "Boosting"
+            else:
+                mod_or_boost = "Similar"
+
+            table.add_row([key, t_bag, t_boost, mod_or_bag, mod_or_boost,
                            data_res.num_records[0], data_res.num_classes,
                            data_res.mod_clf.mean, data_res.bag_clf.mean, data_res.boost_clf.mean,
                            data_res.mod_clf.std, data_res.bag_clf.std, data_res.boost_clf.std])
+
+        print(f"k = {self.k}")
+        print(f"n = {self.n}")
+        print(f"max_depth = {self.max_depth}")
+
         print(table)
-
-
-
 
     def display_figure(self):
 
@@ -284,7 +296,7 @@ class Algorithm:
         fig, ax = plt.subplots(figsize=(20, 10))
         n_groups = len(self.result)
         index = np.arange(n_groups)
-        bar_width = 0.27
+        bar_width = 0.25
 
         opacity = .7
         error_config = {'ecolor': '0.2'}
@@ -292,9 +304,9 @@ class Algorithm:
         modified_clf = ax.bar(index, mean_mod, bar_width, alpha=opacity, color='g', yerr=std_mod,
                               error_kw=error_config, label='Boosting in Bagging')
         bagging_clf = ax.bar(index + bar_width, mean_bag, bar_width, alpha=opacity, color='r', yerr=std_bag,
-                              error_kw=error_config, label='Bagging')
+                             error_kw=error_config, label='Bagging')
         boosting_clf = ax.bar(index + (2 * bar_width), mean_boost, bar_width, alpha=opacity, color='y', yerr=std_boost,
-                             error_kw=error_config, label='Boosting')
+                              error_kw=error_config, label='Boosting')
 
         ax.set_xlabel('Classifiers')
         ax.set_ylabel('Accuracy scores with variance')
