@@ -2,12 +2,10 @@ from Algorithm import Algorithm
 from Dataset import Dataset
 
 if __name__ == '__main__':
-   ens = Algorithm()
-   datasets = Dataset.get_datasets()
+    datasets = Dataset.get_datasets()
+    alg = Algorithm(datasets)
 
-   for dataset in datasets:
+    alg.iterate_validation_for_each_dataset()
 
-      ens.cross_val_5x2(dataset=dataset)
-
-
-   ens.display_figure()
+    alg.display_figure()
+    alg.display_table()
