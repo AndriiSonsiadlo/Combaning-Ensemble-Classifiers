@@ -3,13 +3,11 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 from mlxtend.classifier import EnsembleVoteClassifier
-from tabulate import tabulate
 from prettytable import PrettyTable
-from scipy.stats import studentized_range, ttest_rel, ttest_ind
-from sklearn import clone
+from scipy.stats import studentized_range, ttest_rel
 from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, VotingClassifier
-from sklearn.metrics import roc_auc_score, accuracy_score
-from sklearn.model_selection import StratifiedKFold, RepeatedStratifiedKFold
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import StratifiedKFold
 from scipy.stats import studentized_range
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import resample
@@ -72,8 +70,6 @@ class DatasetResult:
 
         self.t_student_mod_bag = None
         self.t_student_mod_boost = None
-        self.p_value_mod_bag = None
-        self.p_value_mod_boost = None
 
     def calculate_mean_and_std(self):
         self.mod_clf.calculate_mean_and_std()
@@ -83,8 +79,8 @@ class DatasetResult:
 
 class Algorithm:
     seeds = [20, 45888, 10000, 89, 65487]
-    k = 20
-    n = 20
+    n = 5
+    k = 15
     max_depth = 10
     n_jobs = -1
     n_samples_max = 0.1
@@ -104,7 +100,7 @@ class Algorithm:
         n_samples = int(self.n_samples_max * len(trn_y))
         classifier_list = self.generate_boosting_list(trn_x, trn_y, n_samples)
 
-        clf_modified_1 = VotingClassifier(estimators=classifier_list, voting='soft', n_jobs=self.n_jobs)
+        clf_modified_1 = VotingClassifier(estimators=classifier_list, voting='soft')
         clf_bagging_2 = BaggingClassifier(DecisionTreeClassifier(max_depth=self.max_depth), n_estimators=self.n,
                                           bootstrap=True,
                                           n_jobs=self.n_jobs)
@@ -130,99 +126,85 @@ class Algorithm:
 
         x, y = dataset.x_features, dataset.y_labels
 
-        n_splits = 5
-        n_repeats = 2
+        # scores_1, scores_2, scores_3, diff_scores = [], [], [], []
+        p_1_1_bag, p_1_1_boost = 0.0, 0.0  # Initialize the score difference for the 1st fold of the 1st iteration
+        s_sqr_bag, s_sqr_boost = 0.0, 0.0  # Initialize a place holder for the variance estimate
 
-        # Split the dataset in 2 parts with the current seed
-        rskfolds = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=self.seeds[2])
+        # Iterate through 5 2-fold CV
+        for i_s, seed in enumerate(self.seeds):
 
+            p_i_bag = np.zeros(2)  # Initialize score differences
+            p_i_boost = np.zeros(2)  # Initialize score differences
 
-        # Go through the current 2 fold
-        for fold_id, (trn_idx, val_idx) in enumerate(rskfolds.split(x, y)):
+            # Split the dataset in 2 parts with the current seed
+            folds = StratifiedKFold(n_splits=2, shuffle=True, random_state=seed)
 
-            # Split the data - 50 / 50
-            trn_x, trn_y = x[trn_idx], y[trn_idx]
-            val_x, val_y = x[val_idx], y[val_idx]
+            # Go through the current 2 fold
+            for i_f, (trn_idx, val_idx) in enumerate(folds.split(x, y)):
 
-            mod_clf.clf, bag_clf.clf, boost_clf.clf = self.__get_classifiers(trn_x, trn_y)
+                # Split the data - 50 / 50
+                trn_x, trn_y = x[trn_idx], y[trn_idx]
+                val_x, val_y = x[val_idx], y[val_idx]
 
-            # Train classifiers
-            mod_clf.clf.fit(trn_x, trn_y)
-            bag_clf.clf.fit(trn_x, trn_y)
-            boost_clf.clf.fit(trn_x, trn_y)
+                mod_clf.clf, bag_clf.clf, boost_clf.clf = self.__get_classifiers(trn_x, trn_y)
 
-            # Compute scores and keep score history for mean and stdev calculation
-            try:
-                preds_1 = mod_clf.clf.predict(val_x)[:, 1]
-                preds_2 = bag_clf.clf.predict(val_x)[:, 1]
-                preds_3 = boost_clf.clf.predict(val_x)[:, 1]
-                mod_clf.scores.append(accuracy_score(val_y, preds_1))
-                bag_clf.scores.append(accuracy_score(val_y, preds_2))
-                boost_clf.scores.append(accuracy_score(val_y, preds_3))
-            except BaseException as e:
-                preds_1 = mod_clf.clf.predict(val_x)
-                preds_2 = bag_clf.clf.predict(val_x)
-                preds_3 = boost_clf.clf.predict(val_x)
-                mod_clf.scores.append(accuracy_score(val_y, preds_1))
-                bag_clf.scores.append(accuracy_score(val_y, preds_2))
-                boost_clf.scores.append(accuracy_score(val_y, preds_3))
+                # Train classifiers
+                mod_clf.clf.fit(trn_x, trn_y)
+                bag_clf.clf.fit(trn_x, trn_y)
+                boost_clf.clf.fit(trn_x, trn_y)
 
+                # Compute scores and keep score history for mean and stdev calculation
+                try:
+                    preds_1 = mod_clf.clf.predict_proba(val_x)[:, 1]
+                    preds_2 = bag_clf.clf.predict_proba(val_x)[:, 1]
+                    preds_3 = boost_clf.clf.predict_proba(val_x)[:, 1]
+                    mod_clf.scores.append(roc_auc_score(val_y, preds_1, multi_class='ovr'))
+                    bag_clf.scores.append(roc_auc_score(val_y, preds_2, multi_class='ovr'))
+                    boost_clf.scores.append(roc_auc_score(val_y, preds_3, multi_class='ovr'))
+                except np.AxisError:
+                    preds_1 = mod_clf.clf.predict_proba(val_x)
+                    preds_2 = bag_clf.clf.predict_proba(val_x)
+                    preds_3 = boost_clf.clf.predict_proba(val_x)
+                    mod_clf.scores.append(roc_auc_score(val_y, preds_1, multi_class='ovr'))
+                    bag_clf.scores.append(roc_auc_score(val_y, preds_2, multi_class='ovr'))
+                    boost_clf.scores.append(roc_auc_score(val_y, preds_3, multi_class='ovr'))
 
-            # keep score history for mean and stdev calculation
-            # diff_scores.append((score_1 - score_2, scores_1 - score_3))
-            print("Fold %2d score difference between clf_modified and clf_bagging = %.6f" % (
-                fold_id + 1, mod_clf.scores[-1] - bag_clf.scores[-1]))
-            print("Fold %2d score difference between clf_modified and clf_boosting = %.6f" % (
-                fold_id + 1, mod_clf.scores[-1] - boost_clf.scores[-1]))
+                # keep score history for mean and stdev calculation
+                # diff_scores.append((score_1 - score_2, scores_1 - score_3))
+                print("Fold %2d score difference between clf_modified and clf_bagging = %.6f" % (
+                    i_f + 1, mod_clf.scores[-1] - bag_clf.scores[-1]))
+                print("Fold %2d score difference between clf_modified and clf_boosting = %.6f" % (
+                    i_f + 1, mod_clf.scores[-1] - boost_clf.scores[-1]))
 
+                p_i_bag[i_f] = mod_clf.scores[-1] - bag_clf.scores[-1]
+                p_i_boost[i_f] = mod_clf.scores[-1] - boost_clf.scores[-1]
+                if (i_s == 0) & (i_f == 0):
+                    p_1_1_bag = p_i_bag[i_f]
+                    p_1_1_boost = p_i_boost[i_f]
+
+            # Compute mean of scores difference for the current 2-fold CV
+            p_i_bar_bag = (p_i_bag[0] + p_i_bag[1]) / 2
+            p_i_bar_boost = (p_i_boost[0] + p_i_boost[1]) / 2
+            # Compute the variance estimate for the current 2-fold CV
+            s_i_sqr_bag = (p_i_bag[0] - p_i_bar_bag) ** 2 + (p_i_bag[1] - p_i_bar_bag) ** 2
+            s_i_sqr_boost = (p_i_boost[0] - p_i_bar_boost) ** 2 + (p_i_boost[1] - p_i_bar_boost) ** 2
+            # Add up to the overall variance
+            s_sqr_bag += s_i_sqr_bag
+            s_sqr_boost += s_i_sqr_boost
+
+        t_bar_bag = p_1_1_bag / ((s_sqr_bag / 5) ** .5)
+        t_bar_boost = p_1_1_boost / ((s_sqr_boost / 5) ** .5)
+
+        self.result[dataset.name].t_student_mod_bag = t_bar_bag
+        self.result[dataset.name].t_student_mod_boost = t_bar_boost
         self.result[dataset.name].calculate_mean_and_std()
 
-        t_statistic = np.zeros((3, 3))
-        p_value = np.zeros((3, 3))
-
-
-        scores = []
-        scores.append(mod_clf.scores)
-        scores.append(bag_clf.scores)
-        scores.append(boost_clf.scores)
-        for i in range(3):
-            for j in range(3):
-                t_statistic[i, j], p_value[i, j] = ttest_ind(scores[i], scores[j])
-        print("t-statistic:\n", t_statistic, "\n\np-value:\n", p_value)
-        self.result[dataset.name].t_student_mod_bag = t_statistic[0, 1]
-        self.result[dataset.name].t_student_mod_boost = t_statistic[0, 2]
-        self.result[dataset.name].p_value_mod_bag = p_value[0, 1]
-        self.result[dataset.name].p_value_mod_boost = p_value[0, 2]
-
-
+        print("bag", t_bar_bag)
+        print("boost", t_bar_boost)
         print("Classifier Mod mean score and stdev: %.4f (+/- %.4f)" % (mod_clf.mean, mod_clf.std))
         print("Classifier Bag mean score and stdev: %.4f (+/- %.4f)" % (bag_clf.mean, bag_clf.std))
         print("Classifier Boost mean score and stdev: %.4f (+/- %.4f)" % (boost_clf.mean, boost_clf.std))
         # print("Score difference mean (+/- stdev): %.4f (+/- %.4f)" % (np.mean(diff_scores[0]), np.std(diff_scores[0])))
-
-
-        headers = ["Mod", "Bag", "Boost"]
-        names_column = np.array([["Mod"], ["Bag"], ["Boost"]])
-
-        advantage = np.zeros((3, 3))
-        advantage[t_statistic > 0] = 1
-        advantage_table = tabulate(np.concatenate((names_column, advantage), axis=1), headers)
-        print("\nAdvantage:\n", advantage_table)
-
-        significance = np.zeros((3, 3))
-        significance[p_value <= self.alfa] = 1
-        significance_table = tabulate(np.concatenate(
-            (names_column, significance), axis=1), headers)
-        print("\nsignificance (alpha = 0.05):\n".capitalize(), significance_table)
-
-        stat_better = significance * advantage
-        stat_better_table = tabulate(np.concatenate(
-            (names_column, stat_better), axis=1), headers)
-        print("\nStatistically significantly better:\n", stat_better_table)
-
-
-
-
 
     def get_mean_std_lists(self):
 
@@ -241,7 +223,7 @@ class Algorithm:
 
     def display_table(self):
         table = PrettyTable()
-        table.field_names = ["Dataset", "t - bag", "p - bag",  "t - boost","p - boost", "Differ - mod and bag",
+        table.field_names = ["Dataset", "t - mod_bag", "t - mod_boost", "Differ - mod and bag",
                              "Differ - mod and boost", "Num records", "Num classes", "Mod clf - mean",
                              "Bagging clf - mean", "Boosting clf - mean", "Mod clf - std", "Bagging clf - std",
                              "Boosting clf - std"]
@@ -249,8 +231,6 @@ class Algorithm:
         for key, data_res in self.result.items():
             t_bag = round(data_res.t_student_mod_bag, 2)
             t_boost = round(data_res.t_student_mod_boost, 2)
-            p_bag = round(data_res.p_value_mod_bag, 3)
-            p_boost = round(data_res.p_value_mod_boost, 3)
 
             if t_bag > 2.571:
                 mod_or_bag = "Modified"
@@ -266,13 +246,10 @@ class Algorithm:
             else:
                 mod_or_boost = "Similar"
 
-            table.add_row([key, t_bag, p_bag, t_boost, p_boost, mod_or_bag, mod_or_boost,
+            table.add_row([key, t_bag, t_boost, mod_or_bag, mod_or_boost,
                            data_res.num_records[0], data_res.num_classes,
                            data_res.mod_clf.mean, data_res.bag_clf.mean, data_res.boost_clf.mean,
                            data_res.mod_clf.std, data_res.bag_clf.std, data_res.boost_clf.std])
-
-            print(fr"{key} & {t_bag} & {p_bag}  & {t_boost} & {p_boost} \\")
-            print(r"\hline")
 
         print(f"k = {self.k}")
         print(f"n = {self.n}")
@@ -296,8 +273,7 @@ class Algorithm:
                               error_kw=error_config, label='Boosting in Bagging')
         bagging_clf = ax.bar(index + bar_width, mean_bag, bar_width, alpha=opacity, color='#DF60AD', yerr=std_bag,
                              error_kw=error_config, label='Bagging')
-        boosting_clf = ax.bar(index + (2 * bar_width), mean_boost, bar_width, alpha=opacity, color='#FC9426',
-                              yerr=std_boost,
+        boosting_clf = ax.bar(index + (2 * bar_width), mean_boost, bar_width, alpha=opacity, color='#FC9426', yerr=std_boost,
                               error_kw=error_config, label='Boosting')
 
         ax.set_xlabel('Classifiers')
